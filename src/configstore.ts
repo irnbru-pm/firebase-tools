@@ -2,7 +2,7 @@ import * as Configstore from "configstore";
 import { readSession, writeSession } from "./irnbru";
 
 const prefs = new Configstore("firebase-tools-irnbru");
-const accountKeys = new Set(["user", "tokens", "additionalAccounts", "session", "loginScopes"]);
+const accountKeys = new Set(["user", "tokens", "additionalAccounts", "session", "loginScopes", "tempLoginState"]);
 let accounts: Record<string, unknown> | undefined;
 function load(): Record<string, unknown> {
   return accounts ??= JSON.parse(readSession("default") ?? "{}") as Record<string, unknown>;

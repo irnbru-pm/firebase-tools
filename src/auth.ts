@@ -238,14 +238,9 @@ export function setGlobalDefaultAccount(accountOrEmail: string | Account) {
     account = accountOrEmail;
   }
 
-  updateAccounts({ user: account.user, tokens: account.tokens });
+  const additionalAccounts = getAdditionalAccounts().filter((a) => a.user.email !== account.user.email);
+  updateAccounts({ user: account.user, tokens: account.tokens, additionalAccounts });
 
-  const additionalAccounts = getAdditionalAccounts();
-  const index = additionalAccounts.findIndex((a) => a.user.email === account.user.email);
-  if (index >= 0) {
-    additionalAccounts.splice(index, 1);
-    configstore.set("additionalAccounts", additionalAccounts);
-  }
 }
 
 function open(url: string): void {
@@ -469,11 +464,7 @@ export async function loginPrototyper(): Promise<PrototyperRes> {
 
 // recordCredentials saves credentials to configstore to be used in future command runs.
 export function recordCredentials(creds: UserCredentials) {
-  updateAccounts({ user: creds.user, tokens: creds.tokens });
-  // store login scopes in case mandatory scopes grow over time
-  configstore.set("loginScopes", creds.scopes);
-  // remove old session token, if it exists
-  configstore.delete("session");
+  updateAccounts({ user: creds.user, tokens: creds.tokens, loginScopes: creds.scopes, session: undefined });
 }
 
 export async function loginRemotelyStart(): Promise<{
@@ -724,7 +715,6 @@ function deleteAccount(account: Account) {
   // Check the global default user
   const defaultAccount = getGlobalDefaultAccount();
   if (account.user.email === defaultAccount?.user.email) {
-    updateAccounts({ user: undefined, tokens: undefined });
     configstore.delete("usage");
     configstore.delete("analytics-uuid");
   }
@@ -732,7 +722,10 @@ function deleteAccount(account: Account) {
   // Check all additional users
   const additionalAccounts = getAdditionalAccounts();
   const remainingAccounts = additionalAccounts.filter((a) => a.user.email !== account.user.email);
-  configstore.set("additionalAccounts", remainingAccounts);
+  updateAccounts({
+    ...(account.user.email === defaultAccount?.user.email ? { user: undefined, tokens: undefined, loginScopes: undefined } : {}),
+    additionalAccounts: remainingAccounts.length ? remainingAccounts : undefined,
+  });
 
   // Clear any matching project defaults
   const activeAccounts: Record<string, string> = configstore.get("activeAccounts") || {};
@@ -747,8 +740,7 @@ function deleteAccount(account: Account) {
 function updateAccount(account: Account) {
   const defaultAccount = getGlobalDefaultAccount();
   if (account.user.email === defaultAccount?.user.email) {
-    configstore.set("user", account.user);
-    configstore.set("tokens", account.tokens);
+    updateAccounts({ user: account.user, tokens: account.tokens });
   }
 
   const additionalAccounts = getAdditionalAccounts();
