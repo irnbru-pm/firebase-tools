@@ -44,7 +44,7 @@ with tempfile.TemporaryDirectory(dir=output.parent) as temp:
     for file in ('package.json', 'npm-shrinkwrap.json', 'LICENSE'):
         shutil.copy2(tree/file, app/file)
     shutil.copytree(tree/'lib', app/'lib')
-    for directory in ('templates', 'schema'):
+    for directory in ('templates', 'schema', 'prompts', 'standalone'):
         if (tree/directory).is_dir(): shutil.copytree(tree/directory, app/directory)
     run('npm', 'ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', cwd=app)
     for path in app.rglob('*'):
