@@ -6,7 +6,7 @@ import * as opn from "open";
 import * as portfinder from "portfinder";
 
 import * as apiv2 from "./apiv2";
-import { configstore } from "./configstore";
+import { configstore, updateAccounts } from "./configstore";
 import { FirebaseError, getErrMsg, getErrStack } from "./error";
 import * as utils from "./utils";
 import { logger } from "./logger";
@@ -238,8 +238,7 @@ export function setGlobalDefaultAccount(accountOrEmail: string | Account) {
     account = accountOrEmail;
   }
 
-  configstore.set("user", account.user);
-  configstore.set("tokens", account.tokens);
+  updateAccounts({ user: account.user, tokens: account.tokens });
 
   const additionalAccounts = getAdditionalAccounts();
   const index = additionalAccounts.findIndex((a) => a.user.email === account.user.email);
@@ -470,8 +469,7 @@ export async function loginPrototyper(): Promise<PrototyperRes> {
 
 // recordCredentials saves credentials to configstore to be used in future command runs.
 export function recordCredentials(creds: UserCredentials) {
-  configstore.set("user", creds.user);
-  configstore.set("tokens", creds.tokens);
+  updateAccounts({ user: creds.user, tokens: creds.tokens });
   // store login scopes in case mandatory scopes grow over time
   configstore.set("loginScopes", creds.scopes);
   // remove old session token, if it exists
@@ -726,8 +724,7 @@ function deleteAccount(account: Account) {
   // Check the global default user
   const defaultAccount = getGlobalDefaultAccount();
   if (account.user.email === defaultAccount?.user.email) {
-    configstore.delete("user");
-    configstore.delete("tokens");
+    updateAccounts({ user: undefined, tokens: undefined });
     configstore.delete("usage");
     configstore.delete("analytics-uuid");
   }
